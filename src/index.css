@@ -1,0 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-serif: "Playfair Display", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  
+  --color-awaji-charcoal: #0F1012;
+  --color-awaji-slate: #1A1C20;
+  --color-awaji-cream: #F8F9FA;
+  --color-awaji-sand: #E9ECEF;
+  --color-awaji-gold: #D4AF37;
+  --color-awaji-gold-dark: #B8901C;
+  --color-awaji-crimson: #C92A2A;
+  --color-awaji-moss: #2B8A3E;
+  --color-awaji-moss-light: #EBFBEE;
+}
+
+@layer base {
+  body {
+    @apply text-awaji-charcoal font-sans antialiased transition-colors duration-300;
+  }
+}
+
+/* Custom scrollbar hiding and customizing */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Glassmorphism accents */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.dark .glass-panel {
+  background: rgba(20, 22, 26, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-sidebar {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dark .glass-sidebar {
+  background: rgba(15, 16, 18, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Base style overrides for form input fields, selects, and textareas across all themes */
+input, select, textarea {
+  color: #171717 !important; /* Neutral-900 */
+  background-color: #ffffff !important;
+}
+
+/* Input placeholder text readability */
+input::placeholder, textarea::placeholder {
+  color: #737373 !important;
+}
+
+/* Specific overrides when the dark, ninja, or purple (dark) theme is active */
+.dark input, 
+.dark select, 
+.dark textarea {
+  color: #f5f5f5 !important; /* Neutral-100 */
+  background-color: #1a1e29 !important; /* Rich deep slate background for inputs */
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark select option {
+  background-color: #11141d !important;
+  color: #f5f5f5 !important;
+}
+
+.dark input::placeholder, 
+.dark textarea::placeholder {
+  color: #a3a3a3 !important;
+}
+
+/* Ensure that white/light containers inside dark mode are converted to beautiful, high-contrast dark elements */
+.dark .bg-white,
+.dark .bg-white\/70,
+.dark .bg-white\/80,
+.dark .bg-white\/90 {
+  background-color: rgba(26, 29, 38, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  color: #e5e7eb !important;
+}
+
+.dark .bg-neutral-50,
+.dark .bg-neutral-50\/50,
+.dark .bg-neutral-100,
+.dark .bg-neutral-100\/50 {
+  background-color: #131722 !important;
+  color: #f3f4f6 !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Make sure all heading text colors inside dark theme cards are crisp and readable */
+.dark h1, 
+.dark h2, 
+.dark h3, 
+.dark h4, 
+.dark h5, 
+.dark h6 {
+  color: #ffffff !important;
+}
+
+/* Standardize descriptive text and subtitle colors for dark mode elements */
+.dark .text-neutral-800,
+.dark .text-neutral-700 {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-neutral-600,
+.dark .text-neutral-500 {
+  color: #d1d5db !important;
+}
+
+.dark .text-neutral-400 {
+  color: #9ca3af !important;
+}
+
+/* Hover effects and border alignments on dark buttons/elements */
+.dark .hover\:bg-neutral-100:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .border-neutral-200 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+

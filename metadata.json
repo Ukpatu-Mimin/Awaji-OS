@@ -1,0 +1,6 @@
+{
+  "name": "Awaji",
+  "description": "An interactive immersive portal and AI tour guide celebrating the rich history, natural beauty, culinary wonders, and sensory heritage of Awaji Island, Japan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
