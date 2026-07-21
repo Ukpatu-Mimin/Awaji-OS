@@ -140,7 +140,7 @@ Prerequisites:
 1. Clone the repository:
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Ukpatu-Mimin/Awaji-OS.git
 ```
 
 2. Move into the project folder:
