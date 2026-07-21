@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 
+dotenv.config({ path: ".env.local" });
 dotenv.config();
 
 const app = express();
@@ -12,58 +13,9 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 const PORT = 3000;
 
-// Lazy initialization of Gemini API Client
-let aiClient: GoogleGenAI | null = null;
-function getGeminiClient(): GoogleGenAI {
-  if (!aiClient) {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error("GEMINI_API_KEY environment variable is required");
-    }
-    aiClient = new GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
-    });
-  }
-  return aiClient;
-}
+type AiProvider = "gemini" | "openai";
 
-// -------------------------------------------------------------
-// API Endpoints
-// -------------------------------------------------------------
-
-// Health check
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
-});
-
-// Guardian Spirit Chat Endpoint
-app.post("/api/gemini/chat", async (req, res) => {
-  try {
-    const { message, history } = req.body;
-    if (!message) {
-      res.status(400).json({ error: "Message is required" });
-      return;
-    }
-
-    const ai = getGeminiClient();
-
-    // Reconstruct history structure for chat.sendMessage
-    // If history is provided, we can either pass it during chats.create or use generateContent
-    // Since ai.chats.create allows setting history, let's map history cleanly
-    const formattedHistory = (history || []).map((msg: any) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }],
-    }));
-
-    const chat = ai.chats.create({
-      model: "gemini-3.5-flash",
-      config: {
-        systemInstruction: `You are Awaji AI, an elite, highly encouraging, structured, and brilliant academic study coach and student operating system companion. 
+const AWAJI_SYSTEM_INSTRUCTION = `You are Awaji AI, an elite, highly encouraging, structured, and brilliant academic study coach and student operating system companion.
 Your goal is to help students break down complex concepts (from linear algebra to literature), design pristine schedules, handle test stress, and maintain their focus streaks.
 Always respond with clarity, use beautiful markdown checklists or tables, and add an inspiring, friendly study-buddy tone. Keep paragraphs crisp and highly actionable.
 
@@ -94,7 +46,167 @@ CRITICAL FORMATTING RULES:
 1. Do NOT use markdown headers starting with hash characters (e.g., '#', '##', '###', '####'). Instead, format headings as simple capitalized bold labels (e.g. "**Step 1: Concept**" or "**DIAGNOSIS:**").
 2. Do NOT use excessive, broken or empty asterisks like '****'. If you need to bold a word, wrap it with double asterisks on each side (e.g., '**word**').
 3. Format all tables using proper standard Markdown table notation (e.g. using pipes '|' and dashes '---' for the headers). Do not construct tables manually using dashes/underscores alone.
-4. For detailed analytical breakdowns, deep dives, or extra explanations, wrap them inside HTML details disclosures like so: <details><summary>Click to view detailed analysis</summary>Your detailed text here</details>. This keeps the main chat clean and uncluttered.`,
+4. For detailed analytical breakdowns, deep dives, or extra explanations, wrap them inside HTML details disclosures like so: <details><summary>Click to view detailed analysis</summary>Your detailed text here</details>. This keeps the main chat clean and uncluttered.`;
+
+const pickAiProvider = (): AiProvider => {
+  const preferred = (process.env.AI_PROVIDER || "").toLowerCase();
+  if (preferred === "openai") {
+    if (!process.env.OPENAI_API_KEY) throw new Error("AI_PROVIDER=openai requires OPENAI_API_KEY");
+    return "openai";
+  }
+  if (preferred === "gemini") {
+    if (!process.env.GEMINI_API_KEY) throw new Error("AI_PROVIDER=gemini requires GEMINI_API_KEY");
+    return "gemini";
+  }
+  if (process.env.GEMINI_API_KEY) return "gemini";
+  if (process.env.OPENAI_API_KEY) return "openai";
+  throw new Error("Set GEMINI_API_KEY or OPENAI_API_KEY before starting Awaji OS");
+};
+
+// Lazy initialization of Gemini API Client
+let aiClient: GoogleGenAI | null = null;
+function getGeminiClient(): GoogleGenAI {
+  if (!aiClient) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) {
+      throw new Error("GEMINI_API_KEY environment variable is required");
+    }
+    aiClient = new GoogleGenAI({
+      apiKey: key,
+      httpOptions: {
+        headers: {
+          "User-Agent": "aistudio-build",
+        },
+      },
+    });
+  }
+  return aiClient;
+}
+
+const getOpenAIModel = () => process.env.OPENAI_MODEL || "gpt-4.1-mini";
+
+async function callOpenAIResponses(body: Record<string, any>): Promise<any> {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) throw new Error("OPENAI_API_KEY environment variable is required");
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: getOpenAIModel(),
+      store: false,
+      ...body,
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error?.message || `OpenAI request failed with HTTP ${response.status}`);
+  }
+  return data;
+}
+
+const extractOpenAIText = (data: any): string => {
+  if (typeof data?.output_text === "string") return data.output_text;
+  const textParts: string[] = [];
+  for (const item of data?.output || []) {
+    for (const part of item?.content || []) {
+      if (typeof part?.text === "string") textParts.push(part.text);
+    }
+  }
+  return textParts.join("\n").trim();
+};
+
+async function generateOpenAIText(
+  prompt: string,
+  systemInstruction?: string,
+  history: any[] = []
+): Promise<string> {
+  const input = [
+    ...history.map((msg: any) => ({
+      role: msg.role === "assistant" ? "assistant" : "user",
+      content: String(msg.content || ""),
+    })),
+    { role: "user", content: prompt },
+  ];
+
+  const data = await callOpenAIResponses({
+    instructions: systemInstruction,
+    input,
+  });
+  return extractOpenAIText(data);
+}
+
+async function generateOpenAIJson<T>(prompt: string, fallback: T, systemInstruction?: string): Promise<T> {
+  const text = await generateOpenAIText(
+    `${prompt}\n\nReturn only valid JSON. Do not wrap it in markdown fences.`,
+    systemInstruction
+  );
+  const cleaned = text.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+  return JSON.parse(cleaned || JSON.stringify(fallback));
+}
+
+async function parseMaterialWithOpenAI(fileData: string, mimeType: string): Promise<string> {
+  const prompt = "You are an elite academic material transcriber. Extract all main topics, critical formulas, definitions, key arguments, and summarized notes from the provided file. Format them beautifully in clean markdown, with bullet points, bold headers, and structured lists. Do not include introductory remarks - start directly with the title and structured notes.";
+  const data = await callOpenAIResponses({
+    input: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_file",
+            filename: mimeType === "application/pdf" ? "study-material.pdf" : "study-material.txt",
+            file_data: `data:${mimeType};base64,${fileData}`,
+          },
+          { type: "input_text", text: prompt },
+        ],
+      },
+    ],
+  });
+  return extractOpenAIText(data);
+}
+
+// -------------------------------------------------------------
+// API Endpoints
+// -------------------------------------------------------------
+
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", time: new Date().toISOString() });
+});
+
+// Guardian Spirit Chat Endpoint
+app.post("/api/gemini/chat", async (req, res) => {
+  try {
+    const { message, history } = req.body;
+    if (!message) {
+      res.status(400).json({ error: "Message is required" });
+      return;
+    }
+
+    if (pickAiProvider() === "openai") {
+      const text = await generateOpenAIText(message, AWAJI_SYSTEM_INSTRUCTION, history || []);
+      res.json({ text });
+      return;
+    }
+
+    const ai = getGeminiClient();
+
+    // Reconstruct history structure for chat.sendMessage
+    // If history is provided, we can either pass it during chats.create or use generateContent
+    // Since ai.chats.create allows setting history, let's map history cleanly
+    const formattedHistory = (history || []).map((msg: any) => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }],
+    }));
+
+    const chat = ai.chats.create({
+      model: "gemini-3.5-flash",
+      config: {
+        systemInstruction: AWAJI_SYSTEM_INSTRUCTION,
       },
       history: formattedHistory,
     });
@@ -113,6 +225,12 @@ app.post("/api/gemini/parse-material", async (req, res) => {
     const { fileData, mimeType } = req.body;
     if (!fileData || !mimeType) {
       res.status(400).json({ error: "fileData and mimeType are required" });
+      return;
+    }
+
+    if (pickAiProvider() === "openai") {
+      const text = await parseMaterialWithOpenAI(fileData, mimeType);
+      res.json({ text });
       return;
     }
 
@@ -147,11 +265,23 @@ app.post("/api/gemini/generate-flashcards", async (req, res) => {
       return;
     }
 
+    if (pickAiProvider() === "openai") {
+      const prompt = `Based on the academic study notes provided below, generate a list of 5 to 10 highly effective Active Recall flashcards.
+Each flashcard should target an essential concept, term, formula, or relationship.
+Each item must contain "front" and "back" string fields.
+
+Source Notes:
+${notesText}`;
+      const flashcards = await generateOpenAIJson<any[]>(prompt, []);
+      res.json(flashcards);
+      return;
+    }
+
     const ai = getGeminiClient();
 
-    const prompt = `Based on the academic study notes provided below, generate a list of 5 to 10 highly effective Active Recall flashcards. 
-Each flashcard should target an essential concept, term, formula, or relationship. 
-The "front" should contain a clear, challenging question or prompt. 
+    const prompt = `Based on the academic study notes provided below, generate a list of 5 to 10 highly effective Active Recall flashcards.
+Each flashcard should target an essential concept, term, formula, or relationship.
+The "front" should contain a clear, challenging question or prompt.
 The "back" should contain a comprehensive, clear, and accurate answer or explanation.
 
 Source Notes:
@@ -200,10 +330,28 @@ app.post("/api/gemini/socratic-chat", async (req, res) => {
       return;
     }
 
+    if (pickAiProvider() === "openai") {
+      let systemPrompt = `You are Socrates, a brilliant, deeply caring, and rigorous classical tutor.
+Your pedagogical goal is to help the student master their material using cooperative argumentative dialogue (the Socratic Method).
+- DO NOT give answers directly! If the student asks for an answer, challenge them to think, break down the problem, or propose a hypothesis.
+- Point out contradictions or logical leaps in their reasoning with kind, probing questions.
+- Encourage them to define terms precisely, find examples, or apply theories.
+- Keep your turns concise (1-3 sentences) to maintain an active, conversational dialogue.
+- Be supportive, but firm on rigor and deep thinking. Let them experience the joy of discovery.`;
+
+      if (sourceMaterial) {
+        systemPrompt += `\n\nYour session is strictly focused on the following source study notes/material. Limit your prompts and queries to topics covered in or relevant to this text:\n--- START MATERIAL ---\n${sourceMaterial}\n--- END MATERIAL ---`;
+      }
+
+      const text = await generateOpenAIText(message, systemPrompt, history || []);
+      res.json({ text });
+      return;
+    }
+
     const ai = getGeminiClient();
 
     // Setup base Socratic Tutor prompt
-    let systemPrompt = `You are Socrates, a brilliant, deeply caring, and rigorous classical tutor. 
+    let systemPrompt = `You are Socrates, a brilliant, deeply caring, and rigorous classical tutor.
 Your pedagogical goal is to help the student master their material using cooperative argumentative dialogue (the Socratic Method).
 - DO NOT give answers directly! If the student asks for an answer, challenge them to think, break down the problem, or propose a hypothesis.
 - Point out contradictions or logical leaps in their reasoning with kind, probing questions.
@@ -245,9 +393,38 @@ app.post("/api/gemini/feynman-evaluate", async (req, res) => {
       return;
     }
 
+    if (pickAiProvider() === "openai") {
+      let systemPrompt = `You are Richard Feynman, the legendary physicist and teacher known as the "Great Explainer."
+Your pedagogical philosophy is that if you cannot explain something in simple terms to a non-expert (like an 8-year-old child), you do not truly understand it yourself.
+
+Evaluate the student's explanation of the concept "${concept}".
+- Provide a Simplicity Score (0 to 100%) reflecting how clear and jargon-free the language is.
+- Detect any complex jargon terms used without simple explanation.
+- Identify critical knowledge gaps or details left out.
+- Recommend a highly creative, vivid real-world analogy to make it easy to grasp.
+- Provide a constructive, encouraging critique.
+- Provide an improved, ideal Feynman-style explanation that is incredibly simple and engaging.`;
+
+      if (sourceMaterial) {
+        systemPrompt += `\n\nReference the following study notes as the source of truth for the academic concept:\n--- START MATERIAL ---\n${sourceMaterial}\n--- END MATERIAL ---`;
+      }
+
+      const evalJson = await generateOpenAIJson(
+        `Return a JSON object with these fields: simplicityScore number, jargonDetected string array, knowledgeGaps string array, recommendedAnalogy string, critique string, improvedVersion string.
+
+Concept to explain: ${concept}
+Student's explanation:
+${explanation}`,
+        {},
+        systemPrompt
+      );
+      res.json(evalJson);
+      return;
+    }
+
     const ai = getGeminiClient();
 
-    let systemPrompt = `You are Richard Feynman, the legendary physicist and teacher known as the "Great Explainer." 
+    let systemPrompt = `You are Richard Feynman, the legendary physicist and teacher known as the "Great Explainer."
 Your pedagogical philosophy is that if you cannot explain something in simple terms to a non-expert (like an 8-year-old child), you do not truly understand it yourself.
 
 Evaluate the student's explanation of the concept "${concept}".
@@ -321,9 +498,28 @@ app.post("/api/gemini/itinerary", async (req, res) => {
     const studyStyle = style || "balanced";
     const phase = season || "finals prep";
 
+    if (pickAiProvider() === "openai") {
+      const prompt = `Generate a customized academic study plan for a ${daysCount}-day intensive workshop/study period.
+The student is prepping for: ${phase}.
+The primary subjects or focus areas are: ${selectedSubjects}.
+Their preferred study pace/style is: ${studyStyle}.
+Create an authentic, motivating, and highly practical daily schedule. Include intervals for active recall, Feynman technique practice, and Pomodoro focus blocks.
+
+Return a JSON object with:
+- title string
+- summary string
+- days array of objects with dayNumber number, theme string, schedule array
+- each schedule item has time, title, location, description, culturalSecret strings
+- packingTips string array`;
+
+      const itineraryJson = await generateOpenAIJson(prompt, {});
+      res.json(itineraryJson);
+      return;
+    }
+
     const ai = getGeminiClient();
 
-    const prompt = `Generate a customized academic study plan for a ${daysCount}-day intensive workshop/study period. 
+    const prompt = `Generate a customized academic study plan for a ${daysCount}-day intensive workshop/study period.
 The student is prepping for: ${phase}.
 The primary subjects or focus areas are: ${selectedSubjects}.
 Their preferred study pace/style is: ${studyStyle}.
