@@ -83,7 +83,7 @@ function getGeminiClient(): GoogleGenAI {
   return aiClient;
 }
 
-const getOpenAIModel = () => process.env.OPENAI_MODEL || "gpt-4.1-mini";
+const getOpenAIModel = () => process.env.OPENAI_MODEL || "gpt-5.6";
 
 async function callOpenAIResponses(body: Record<string, any>): Promise<any> {
   const key = process.env.OPENAI_API_KEY;

@@ -2,6 +2,44 @@
 
 Awaji OS is a local-first student productivity dashboard with an AI study companion. It combines class scheduling, deadline tracking, focused study tools, active recall, mood logging, habit streaks, notifications, and an AI copilot in one React application.
 
+## OpenAI Build Week Requirement
+
+### How Codex Was Used
+
+Codex was used throughout the project as the main AI coding partner for planning, generating, and refining the application. It helped turn the original idea into a working full-stack prototype by assisting with:
+
+- Designing the overall React/TypeScript project structure
+- Generating feature modules for classes, deadlines, study tools, mood tracking, streaks, themes, and notifications
+- Building the Awaji AI assistant flow and action-tag system
+- Adding local persistence with `localStorage`
+- Creating the Express backend routes for AI-powered features
+- Implementing support for both OpenAI and Gemini provider configuration
+- Debugging TypeScript, frontend state, and API integration issues
+- Improving the README and hackathon documentation
+
+Codex was especially useful for moving quickly across the full stack. It helped generate UI components, connect app state, explain tradeoffs, and update documentation while keeping the project organized enough for a hackathon submission.
+
+### How GPT-5.6 Was Used
+
+GPT-5.6 is used as the primary OpenAI model option for Awaji OS when `OPENAI_API_KEY` is configured. In the app, GPT-5.6 powers the core academic intelligence features, including:
+
+- Awaji AI chat responses for study help, explanations, quizzes, outlines, and coding support
+- Agentic action generation for starting Pomodoro timers, adding classes, adding deadlines, updating streaks, and triggering mood effects
+- Flashcard generation from study notes
+- PDF and study-material extraction through the backend AI route
+- Socratic tutoring sessions that guide students through questions instead of direct answers
+- Feynman technique evaluation for checking whether a student can explain a concept clearly
+- Structured study-plan generation for exam prep and focused learning sessions
+
+The goal was to use GPT-5.6 not only as a chatbot, but as the reasoning layer inside a student operating system that can help students plan, learn, reflect, and take action from one workspace.
+
+### Repository Access for Review
+
+If this repository is private, share access with the OpenAI Build Week reviewers:
+
+- `testing@devpost.com`
+- `build-week-event@openai.com`
+
 ## Features
 
 ### Local User Profiles
@@ -97,6 +135,7 @@ The API keys are read only on the Express server. The React frontend does not re
 - Express
 - Gemini API through `@google/genai`
 - OpenAI API through server-side HTTPS requests
+- GPT-5.6 as the primary OpenAI model option
 
 ## AI Provider Setup
 
@@ -117,7 +156,7 @@ AI_PROVIDER=openai
 # AI_PROVIDER=gemini
 
 # Optional OpenAI model override.
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.6
 ```
 
 Provider selection:
