@@ -4,16 +4,89 @@ Awaji OS is a local-first student productivity dashboard with an AI study compan
 
 ## Features
 
-- Local signup/login profiles stored in browser `localStorage`
-- Class hub with academic calendar setup, weekly sessions, and attendance tracking
-- Deadline board with priorities, estimated workload, subtasks, list view, and Kanban view
-- Study workspace with Pomodoro timers, ambient sound, active recall flashcards, Socratic tutoring, and Feynman technique evaluation
-- PDF/text study-material ingestion for AI-generated notes and flashcards
-- Awaji AI chat assistant with action tags that can add classes, add deadlines, start Pomodoro timers, update streaks, and trigger mood effects
-- Mood tracker with daily logs, heatmap, breathing coach, and emoji rain
-- Streak system for daily study rituals
-- Theme presets for different study environments
-- Notification center for deadline, class, streak, AI, and custom alerts
+### Local User Profiles
+
+Awaji OS includes a lightweight signup and login flow for creating separate student workspaces in the browser. Each profile stores its own classes, deadlines, theme, notifications, habits, streak count, and AI chat history through `localStorage`.
+
+This makes the app simple to run without a database or cloud account system. It is useful for demos, prototypes, and personal local use, but it is not production-grade authentication because passwords are stored in browser storage.
+
+### Home Dashboard
+
+The home dashboard gives students a quick overview of the workspace. It shows registered classes, pending deadlines, current streak progress, a study call-to-action, and a feature carousel that links into the major modules.
+
+The dashboard is designed as the starting point for daily use: check what is active, jump into the Study Arena, ask Awaji AI for help, or move directly into class and deadline management.
+
+### Class Hub and Attendance
+
+The Class Hub manages a student's academic schedule. Students can configure semester details, expected class days, semester duration, exam windows, and course schedules.
+
+Each class can include a course name, code, instructor, room, color, duration, and weekly sessions. The attendance view lets students select a date, see scheduled sessions for that day, and mark whether they attended or missed each class.
+
+The app also migrates older class records into structured weekly sessions when possible, so earlier simple schedule data can still work with the newer attendance system.
+
+### Deadline and Workload Board
+
+The Deadline module tracks assignments, exams, quizzes, projects, and other deliverables. Each task can include a subject, due date, priority, difficulty, estimated workload hours, completion status, and subtasks.
+
+Students can view deadlines as a normal list or as a Kanban board with pending, in-progress, and completed columns. Subtasks help break large assignments into smaller actions, and workload totals help estimate how much effort is sitting in each status column.
+
+The app also scans for overdue or soon-due deadlines and can create alerts in the notification center.
+
+### Study Workspace
+
+The Study Workspace combines several learning tools into one module:
+
+- Pomodoro timer: standard focus sessions, short breaks, and long breaks, with optional ambient sounds.
+- Ambient audio: generated white noise, rain, and wave-like sounds using the browser audio APIs.
+- Active recall flashcards: manual cards plus AI-generated flashcards from uploaded or pasted study notes.
+- Socratic tutor: an AI dialogue mode that asks probing questions instead of directly giving answers.
+- Feynman technique evaluator: students explain a concept, and the AI evaluates clarity, jargon, gaps, analogies, and an improved explanation.
+
+Study material can be pasted directly or uploaded as text/Markdown/PDF. For PDFs, the backend sends the file to the selected AI provider for extraction before generating notes or flashcards.
+
+### Awaji AI Assistant
+
+Awaji AI is the main chat companion for academic help. It can explain topics, draft study guides, generate practice quizzes, help with code debugging, structure proofs, and support general studying workflows.
+
+The assistant also supports agentic action tags. When the model returns a supported hidden-style action tag, the frontend parses it and turns it into an app action. Supported actions include:
+
+- Starting a Pomodoro timer
+- Adding a class
+- Adding a deadline
+- Updating the streak count
+- Triggering mood-based emoji rain
+
+This allows natural language prompts such as asking the AI to add a deadline or start a focus session, while still keeping the actual state changes inside the frontend app.
+
+### Mood Tracker and Breathing Coach
+
+The Mood module lets students log daily emotional state with a short note. Supported moods include happy, sad, anxious, angry, numb, and tired. The latest log for a day updates the annual heatmap so students can see patterns over time.
+
+Mood logging can trigger a full-screen emoji rain animation matching the selected emotion. The module also includes a breathing coach with inhale, hold, and exhale phases for quick regulation during stressful study sessions.
+
+### Streak and Habit System
+
+The Streak module tracks daily study rituals such as completing Pomodoro sessions, logging class lectures, and talking with Awaji AI. Completing rituals updates progress and can contribute to the student's streak count.
+
+The module includes a progress bar, active streak display, and achievement-style badges. Other parts of the app can sync streak data through browser events, so AI actions and habit changes stay connected.
+
+### Theme Customization
+
+Awaji OS includes several theme presets for different study environments, including ivory, dark, amber, emerald, ninja blue, and purple. The selected theme is saved to `localStorage` and restored for the current profile.
+
+The themes affect the main shell styling and are intended to make the workspace feel more personal for daytime, night study, coding, or calm focus sessions.
+
+### Notification Center
+
+The notification center collects workspace alerts in one dropdown. It supports deadline alerts, class reminders, streak messages, AI-related notifications, general alerts, unread counts, mark-as-read actions, clearing all notifications, and navigation back to the related module.
+
+The app can also request native browser notification permission and display system notifications when custom alerts are created.
+
+### AI Provider Support
+
+The backend can use either OpenAI or Gemini. OpenAI is option 1 and Gemini is option 2 in the `.env.local` setup. The selected provider powers chat, PDF extraction, flashcard generation, Socratic tutoring, Feynman evaluation, and study-plan generation.
+
+The API keys are read only on the Express server. The React frontend does not receive the keys directly.
 
 ## Tech Stack
 
