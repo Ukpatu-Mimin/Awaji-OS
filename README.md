@@ -128,16 +128,47 @@ Provider selection:
 
 The frontend still calls routes named `/api/gemini/...` for compatibility with the existing code, but the backend can now route those requests to either Gemini or OpenAI.
 
-## Run Locally
+## Clone and Run Locally
 
-Prerequisite: Node.js
+Prerequisites:
+
+- Node.js
+- npm
+- Git
+- An OpenAI API key or Gemini API key
+
+1. Clone the repository:
+
+```bash
+git clone <your-repository-url>
+```
+
+2. Move into the project folder:
+
+```bash
+cd Awaji-OS
+```
+
+3. Create a `.env.local` file in the project root and add at least one API key:
+
+```bash
+OPENAI_API_KEY=your_openai_api_key_here
+# GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+4. Install dependencies:
 
 ```bash
 npm install
+```
+
+5. Start the local development server:
+
+```bash
 npm run dev
 ```
 
-Open the app at:
+6. Open the app in your browser:
 
 ```text
 http://localhost:3000
