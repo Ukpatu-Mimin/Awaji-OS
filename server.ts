@@ -58,8 +58,8 @@ const pickAiProvider = (): AiProvider => {
     if (!process.env.GEMINI_API_KEY) throw new Error("AI_PROVIDER=gemini requires GEMINI_API_KEY");
     return "gemini";
   }
-  if (process.env.GEMINI_API_KEY) return "gemini";
   if (process.env.OPENAI_API_KEY) return "openai";
+  if (process.env.GEMINI_API_KEY) return "gemini";
   throw new Error("Set GEMINI_API_KEY or OPENAI_API_KEY before starting Awaji OS");
 };
 

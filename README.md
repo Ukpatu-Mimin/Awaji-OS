@@ -27,21 +27,21 @@ Awaji OS is a local-first student productivity dashboard with an AI study compan
 
 ## AI Provider Setup
 
-Awaji OS supports both Gemini and OpenAI API keys. API keys must stay on the server and should never be placed in client-side React code.
+Awaji OS supports both OpenAI and Gemini API keys. API keys must stay on the server and should never be placed in client-side React code.
 
 Create a `.env.local` file in the project root:
 
 ```bash
-# Option 1: Gemini
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Option 2: OpenAI
+# Option 1: OpenAI
 OPENAI_API_KEY=your_openai_api_key_here
 
+# Option 2: Gemini
+GEMINI_API_KEY=your_gemini_api_key_here
+
 # Optional: force one provider when both keys are present.
-# Defaults to Gemini first, then OpenAI.
-AI_PROVIDER=gemini
-# AI_PROVIDER=openai
+# Defaults to OpenAI first, then Gemini.
+AI_PROVIDER=openai
+# AI_PROVIDER=gemini
 
 # Optional OpenAI model override.
 OPENAI_MODEL=gpt-4.1-mini
@@ -49,9 +49,9 @@ OPENAI_MODEL=gpt-4.1-mini
 
 Provider selection:
 
-- If `AI_PROVIDER=gemini`, the server requires `GEMINI_API_KEY`.
 - If `AI_PROVIDER=openai`, the server requires `OPENAI_API_KEY`.
-- If `AI_PROVIDER` is not set, the server uses Gemini when `GEMINI_API_KEY` exists, otherwise OpenAI when `OPENAI_API_KEY` exists.
+- If `AI_PROVIDER=gemini`, the server requires `GEMINI_API_KEY`.
+- If `AI_PROVIDER` is not set, the server uses OpenAI when `OPENAI_API_KEY` exists, otherwise Gemini when `GEMINI_API_KEY` exists.
 
 The frontend still calls routes named `/api/gemini/...` for compatibility with the existing code, but the backend can now route those requests to either Gemini or OpenAI.
 
